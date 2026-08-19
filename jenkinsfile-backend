@@ -54,7 +54,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: MINUTES) {
-                    waitFOrQualityGate abortpipeline: true
+                    waitForQualityGate abortPipeline: true
                 }
 
             }
@@ -64,7 +64,7 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
-                    docker built -t backend:${BUILD_NUMBER} .
+                    docker build -t backend:${BUILD_NUMBER} .
                     docker images
                     '''
                 }
