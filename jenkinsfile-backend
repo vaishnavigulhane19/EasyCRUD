@@ -9,6 +9,7 @@ pipeline {
 
     environment {
         my_aws_cred = credentials('aws-access')
+        ECR_REPO =  '262349351040.dkr.ecr.ap-south-1.amazonaws.com/backend'
     }
 
     stages {
@@ -66,6 +67,49 @@ pipeline {
                     sh '''
                     docker build -t backend:${BUILD_NUMBER} .
                     docker images
+                    '''
+                }
+            }
+        }
+
+        stage('iamge push to ecr') {
+            steps {
+                sh '''
+                    aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 262349351040.dkr.ecr.ap-south-1.amazonaws.com
+                    docker tag backend:${BUILD_NUMBER} ${ECR_REPO}:${BUILD_NUMBER}
+                    docker push ${ECR_REPO}:${BUILD_NUMBER}
+
+                
+                '''
+            }
+        }
+
+        stage('Update Manifest') {
+            steps {
+                sh '''
+                    sed -i "s|image: .*|image: ${ECR_REPO}:${BUILD_NUMBER}|" k8s/backend/backend-deployment.yaml
+
+                '''
+            }
+        }
+
+        stage("push change to GITHUB") {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: "github-cred",
+                        usernameVariable: "GIT_USERNAME",
+                        passwordVariable: "GIT_PASSWORD"
+
+                    )
+                ]) {
+                    sh '''
+                        git config user.name "vaishnavigulhane19"
+                        git config user.email "vaishnavigulhane530@gmail.com"
+
+                        git add k8s/backend/backend-deployment.yaml
+                        git commit -m "update"
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/vaishnavigulhane19/EasyCRUD.git HEAD:main
                     '''
                 }
             }
