@@ -43,9 +43,10 @@ pipeline {
 
         stage('Sonarqube Analysis') {
             steps {
-                dir('backend')
-                withSonarQubeEnv('sonar') {
-                sh 'mvn sonar:sonar'
+                dir('backend') {
+                    withSonarQubeEnv('sonar') {
+                    sh 'mvn sonar:sonar'
+                    }
                 }
             }    
         }
@@ -60,7 +61,15 @@ pipeline {
         // }
 
         // stage('Docker Build') {
+        //     steps {
+        //         dir('backend') {
+        //             sh '''
+        //             docker built -t backend:${BUILD_NUMBER} .
+        //             docker images
+        //             '''
+        //         }
+        //     }
 
-        // }
+        // // }
     }
 }    
