@@ -51,25 +51,25 @@ pipeline {
             }    
         }
 
-        // stage('Quality Gate') {
-        //     steps {
-        //         timeout(time: 5, unit: MINUTES) {
-        //             waitFOrQualityGate abortpipeline: true
-        //         }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: MINUTES) {
+                    waitFOrQualityGate abortpipeline: true
+                }
 
-        //     }
-        // }
+            }
+        }
 
-        // stage('Docker Build') {
-        //     steps {
-        //         dir('backend') {
-        //             sh '''
-        //             docker built -t backend:${BUILD_NUMBER} .
-        //             docker images
-        //             '''
-        //         }
-        //     }
+        stage('Docker Build') {
+            steps {
+                dir('backend') {
+                    sh '''
+                    docker built -t backend:${BUILD_NUMBER} .
+                    docker images
+                    '''
+                }
+            }
 
-        // // }
+        }
     }
 }    
