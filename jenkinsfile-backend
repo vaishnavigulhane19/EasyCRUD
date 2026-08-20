@@ -72,6 +72,16 @@ pipeline {
             }
         }
 
+
+        stage('Trivy image scanning'){
+            steps {
+                sh '''
+                    trivy image --scanners vuln --severity HIGH,CRETICAL --exit-code 0 backend:${BUILD}
+                '''
+            }
+        }
+
+
         stage('iamge push to ecr') {
             steps {
                 sh '''
@@ -112,7 +122,7 @@ pipeline {
                         git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/vaishnavigulhane19/EasyCRUD.git HEAD:main
                     '''
                 }
-            }
+            }   
         }
     }
 }    
