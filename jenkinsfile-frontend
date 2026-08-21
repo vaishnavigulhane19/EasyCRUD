@@ -42,7 +42,6 @@ pipeline {
         stage('docker build frontend') {
             steps {
                 sh '''
-                docker rmi -f $(docker image -q) 
                 docker build -t frontend:${BUILD_NUMBER} .
                 docker images
                 '''
