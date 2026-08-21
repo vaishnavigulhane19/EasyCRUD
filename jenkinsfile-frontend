@@ -91,7 +91,7 @@ pipeline {
 
                             git add k8s/frontend/frontend-deployment.yaml
                             git commit -m "update-frontend-deployment"
-                            git push 
+                            git push origin main
                         '''     
                         }
 
