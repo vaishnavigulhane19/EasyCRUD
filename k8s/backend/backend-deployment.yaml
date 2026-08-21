@@ -20,8 +20,8 @@ spec:
         app: backend 
     spec: 
       containers: 
-      - name: nginx-cont
-        image: 262349351040.dkr.ecr.ap-south-1.amazonaws.com/backend:23
+      - name: backend-cont
+        image: 262349351040.dkr.ecr.ap-south-1.amazonaws.com/backend:22
         ports:
           - containerPort: 8080
         
