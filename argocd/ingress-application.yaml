@@ -9,7 +9,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/mayurpandit25/EasyCRUD.git
+    repoURL: https://github.com/vaishnavigulhane19/EasyCRUD.git
     targetRevision: main
     path: k8s/ingress
 

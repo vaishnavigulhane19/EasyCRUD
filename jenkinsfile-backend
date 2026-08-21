@@ -130,7 +130,19 @@ pipeline {
                         git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/vaishnavigulhane19/EasyCRUD.git HEAD:main
                     '''
                 }
+         
             }   
+        }
+
+        stage('Argocd Deployment') {
+            steps {
+                sh '''
+                    sudo aws eks update-kubeconfig --name my-eks-cluster1 --region ap-south-1
+                    sudo kubectl apply -f argocd/backend-application.yaml
+                    sudo kubectl get pods -n argocd
+                    sudo kubectl get application -n argocd
+                '''
+            }
         }
     }
 }    
