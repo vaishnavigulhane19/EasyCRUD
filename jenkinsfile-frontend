@@ -41,11 +41,12 @@ pipeline {
 
         stage('docker build frontend') {
             steps {
-                dir('frontend')
+                dir('frontend') {
                     sh '''
                     docker build -t frontend:${BUILD_NUMBER} .
                     docker images
                     '''
+                }    
             }
         }
 
