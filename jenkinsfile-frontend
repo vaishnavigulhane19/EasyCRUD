@@ -1,0 +1,116 @@
+pipeline {
+    agent {
+        label "worker"
+    }
+
+    environment {
+        MY_AWS_CRED = credentials('aws-access') 
+        ECR_REPO = "262349351040.dkr.ecr.ap-south-1.amazonaws.com/frontend"
+    }
+    stages {
+        stage('checkout') {
+            steps {
+                git branch: "main" , credentialsId: "github-cred" , url: "https://github.com/vaishnavigulhane19/EasyCRUD.git" 
+            }
+        }  
+
+        stage('Build-frontend') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                        npm install
+                        npm run build 
+                    '''
+                }    
+            }
+
+            post {
+                success {
+                    archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true
+                }
+            }
+        }
+
+        stage('push artifacts to s3') {
+            steps {
+                sh '''
+                    aws s3 sync frontend/dist s3:deploywithnavi.space
+                '''
+            }
+        }
+
+        stage('docker build frontend') {
+            steps {
+                sh '''
+                docker rmi -f $(docker image -q) 
+                docker build -t frontend:${BUILD_NUMBER} .
+                docker images
+                '''
+            }
+        }
+
+        stage('trivy image scanning') {
+            steps {
+                sh '''
+                    trivy image --scanner vuln --severity HIGH,CRITICAL --exit-code 0 frontend:${BUILD_NUMBER}
+                '''
+            }
+        }
+
+        stage('image push to ecr') {
+            steps {
+                sh '''
+                    aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 262349351040.dkr.ecr.ap-south-1.amazonaws.com
+                    docker tag frontend:${BUILD_NUMBER} ${ECR_REPO}:${BUILD_NUMBER}
+                    docker push ${ECR_REPO}:${BUILD_NUMBER}
+                '''
+            }
+        }  
+
+        stage('update manifest') {
+            steps {
+                sh '''
+                    sed -i "s|image: .*|image: ${ECR_REPO}:${BUILD_BUMBER}" k8s/frontend/frontend-deployment.yaml 
+                '''
+            }
+        }
+
+        stage('push change to github') {
+            steps {
+                    withcredentials[(
+                        usernamePassword(
+                            credentialsId: "github-cred",
+                            usernameVariable: "GIT_USERNAME",
+                            passwordVariable: "GIT_PASSWORD"
+                        )
+                    )]  {
+                        sh '''
+                            git config user.name "vaishnavigulhane19"
+                            git config user.email "vaishnavigulhane530@gmail.com"
+
+                            git add k8s/frontend/frontend-deployment.yaml
+                            git commit -m "update-frontend-deployment"
+                            git push 
+                        '''     
+                        }
+
+            }
+        } 
+
+        stage('Update argocd deployment') {
+            steps {
+                sh '''
+                    sudo aws eks update-kubeconfig --name my-eks-cluster1 --region ap-south-1
+                    sudo kubectl apply -f argocd/frontend-application.yaml
+                    sudo kubectl get application -n argocd
+                 '''
+            }
+        }        
+    }
+
+    post {
+        success {
+            cleanWs()
+        }
+    }
+}
