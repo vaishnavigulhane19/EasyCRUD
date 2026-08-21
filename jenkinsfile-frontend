@@ -34,7 +34,7 @@ pipeline {
         stage('push artifacts to s3') {
             steps {
                 sh '''
-                    aws s3 sync frontend/dist s3:deploywithnavi.space
+                    aws s3 sync frontend/dist s3://deploywithnavi.space
                 '''
             }
         }
@@ -52,7 +52,7 @@ pipeline {
         stage('trivy image scanning') {
             steps {
                 sh '''
-                    trivy image --scanner vuln --severity HIGH,CRITICAL --exit-code 0 frontend:${BUILD_NUMBER}
+                    trivy image --scanners vuln --severity HIGH,CRITICAL --exit-code 0 frontend:${BUILD_NUMBER}
                 '''
             }
         }
@@ -70,20 +70,20 @@ pipeline {
         stage('update manifest') {
             steps {
                 sh '''
-                    sed -i "s|image: .*|image: ${ECR_REPO}:${BUILD_BUMBER}" k8s/frontend/frontend-deployment.yaml 
+                    sed -i "s|image: .*|image: ${ECR_REPO}:${BUILD_NUMBER}" k8s/frontend/frontend-deployment.yaml 
                 '''
             }
         }
 
         stage('push change to github') {
             steps {
-                    withcredentials[(
+                    withCredentials([
                         usernamePassword(
                             credentialsId: "github-cred",
                             usernameVariable: "GIT_USERNAME",
                             passwordVariable: "GIT_PASSWORD"
                         )
-                    )]  {
+                    ])  {
                         sh '''
                             git config user.name "vaishnavigulhane19"
                             git config user.email "vaishnavigulhane530@gmail.com"
