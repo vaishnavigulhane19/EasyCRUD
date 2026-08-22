@@ -21,7 +21,7 @@ spec:
     spec: 
       containers: 
         - name: frontend-container
-          image: apiVersion: apps/v1 
+          image: 262349351040.dkr.ecr.ap-south-1.amazonaws.com/frontend:14
 kind: Deployment 
 metadata: 
   name: frontend-deployment 
@@ -44,7 +44,7 @@ spec:
     spec: 
       containers: 
         - name: frontend-container
-          image: 262349351040.dkr.ecr.ap-south-1.amazonaws.com/frontend:20
+          image: 262349351040.dkr.ecr.ap-south-1.amazonaws.com/frontend:14
           ports: 
             - containerPort: 80
 
