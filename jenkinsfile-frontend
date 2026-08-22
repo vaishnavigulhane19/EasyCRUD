@@ -9,12 +9,10 @@ pipeline {
     }
 
     stages {
-
-        stage('checkout') {
+        stage('Checkout') {
             steps {
-                git branch: "main",
-                    credentialsId: "github-cred",
-                    url: "https://github.com/vaishnavigulhane19/EasyCRUD.git"
+                git branch: "main", credentialsId: "github-cred", url: "https://github.com/vaishnavigulhane19/EasyCRUD.git"
+
             }
         }
 
@@ -22,12 +20,11 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh '''
-                        npm install
+                        npm install 
                         npm run build
                     '''
                 }
             }
-
             post {
                 success {
                     archiveArtifacts artifacts: 'frontend/dist/**', fingerprint: true
@@ -35,7 +32,7 @@ pipeline {
             }
         }
 
-        stage('push artifacts to s3') {
+        stage('Push artifacts to s3') {
             steps {
                 sh '''
                     aws s3 sync frontend/dist s3://deploywithnavi.space
@@ -43,18 +40,19 @@ pipeline {
             }
         }
 
-        stage('docker build frontend') {
+        stage('Docker Build') {
             steps {
                 dir('frontend') {
                     sh '''
-                        docker build -t frontend:${BUILD_NUMBER} .
-                        docker images
+                    docker rmi -f $(docker images -q)
+                    docker build -t frontend:${BUILD_NUMBER} .
+                    docker images
                     '''
                 }
             }
         }
 
-        stage('trivy image scanning') {
+        stage('Trivy Image scanning') {
             steps {
                 sh '''
                     trivy image --scanners vuln --severity HIGH,CRITICAL --exit-code 0 frontend:${BUILD_NUMBER}
@@ -64,25 +62,23 @@ pipeline {
 
         stage('Approval') {
             steps {
-                timeout(time: 30, unit: "MINUTES") {
+                timeout(time: 30 , unit: "MINUTES") {
                     input message: 'Deployment to kubernetes?', ok: 'Approve'
                 }
             }
         }
 
-        stage('image push to ecr') {
+        stage('Push image to ECR') {
             steps {
                 sh '''
                     aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 262349351040.dkr.ecr.ap-south-1.amazonaws.com
-
                     docker tag frontend:${BUILD_NUMBER} ${ECR_REPO}:${BUILD_NUMBER}
-
                     docker push ${ECR_REPO}:${BUILD_NUMBER}
                 '''
             }
         }
 
-        stage('update manifest') {
+        stage('Update Manifest') {
             steps {
                 sh '''
                     sed -i "s|image: .*|image: ${ECR_REPO}:${BUILD_NUMBER}|" k8s/frontend/frontend-deployment.yaml
@@ -90,30 +86,29 @@ pipeline {
             }
         }
 
-        stage('push change to github') {
+        stage("Push change to GITHUB"){
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'github-cred',
-                    usernameVariable: 'GIT_USERNAME',
-                    passwordVariable: 'GIT_PASSWORD'
-                )]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: "github-cred",
+                        usernameVariable: "GIT_USERNAME",
+                        passwordVariable: "GIT_PASSWORD"
+                    )
+                ]) {
+
                     sh '''
                         git config user.name "vaishnavigulhane19"
                         git config user.email "vaishnavigulhane530@gmail.com"
 
                         git add k8s/frontend/frontend-deployment.yaml
-
-                        git commit -m "update-frontend-deployment" || true
-
-                        git remote set-url origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/vaishnavigulhane19/k8s-argocd.git
-
-                        git push origin HEAD:main
+                        git commit -m "Update frontend-deployment"
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/vaishnavigulhane19/EasyCRUD.git HEAD:main
                     '''
                 }
             }
         }
-
-        stage('Update argocd deployment') {
+        
+        stage('Update Argocd deployment') {
             steps {
                 sh '''
                     sudo aws eks update-kubeconfig --name my-eks-cluster1 --region ap-south-1
